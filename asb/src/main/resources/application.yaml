@@ -9,8 +9,10 @@ logging:
     root: WARN
     by.dma: DEBUG
 
+
 spring:
   cloud:
     azure:
       servicebus:
+        connection-string: ${AZURE_SERVICEBUS_CONNECTION_STRING}
         namespace: ${AZURE_SERVICEBUS_NAMESPACE}
