@@ -5,6 +5,7 @@ Content-Type: application/json
 {
   "id": "id-1",
   "value": "value1",
+  "duration": 100,
   "error": false
 }
 
@@ -15,6 +16,7 @@ Content-Type: application/json
 {
   "id": "bad-id",
   "value": "bad-value1",
+  "duration": 1000,
   "error": true
 }
 

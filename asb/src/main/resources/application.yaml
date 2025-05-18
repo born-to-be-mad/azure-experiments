@@ -1,7 +1,16 @@
+messaging:
+  produce:
+    topic: topic1
+  consume:
+    topic: topic1
+    subscription: topic1-subscriber1
+logging:
+  level:
+    root: WARN
+    by.dma: DEBUG
+
 spring:
   cloud:
     azure:
       servicebus:
-        #namespace: ${AZURE_SERVICEBUS_NAMESPACE}
-        namespace: todo
-        entity-type: queue
+        namespace: ${AZURE_SERVICEBUS_NAMESPACE}

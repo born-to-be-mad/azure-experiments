@@ -12,11 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ProducerController {
 
-    private final ProducerService consoleProducerService;
+    private final ProducerService messagingProducerService;
 
     @PostMapping
     public void sendMessage(@RequestBody String message) {
-        consoleProducerService.send(message);
+        messagingProducerService.send(message);
     }
 }
 
