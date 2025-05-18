@@ -1,0 +1,7 @@
+spring:
+  cloud:
+    azure:
+      servicebus:
+        #namespace: ${AZURE_SERVICEBUS_NAMESPACE}
+        namespace: todo
+        entity-type: queue
