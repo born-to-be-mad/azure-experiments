@@ -1,0 +1,22 @@
+### Send valid message
+POST http://localhost:8080/api/produce
+Content-Type: application/json
+
+{
+  "id": "id-1",
+  "value": "value1",
+  "error": false
+}
+
+### Send an error
+POST http://localhost:8080/api/produc
+Content-Type: application/json
+
+{
+  "id": "bad-id",
+  "value": "bad-value1",
+  "error": true
+}
+
+###
+POST http://localhost:8080/api/produce
