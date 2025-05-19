@@ -6,11 +6,15 @@ import com.azure.spring.cloud.core.customizer.AzureServiceClientBuilderCustomize
 import com.azure.spring.cloud.service.servicebus.properties.ServiceBusEntityType;
 import com.azure.spring.messaging.servicebus.core.ServiceBusProducerFactory;
 import com.azure.spring.messaging.servicebus.core.ServiceBusTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class ServiceBusConfiguration {
+
+    @Value("${messaging.produce.concurrency:5}")
+    private Integer concurrency;
 
     @Bean
     public ServiceBusTemplateFactory serviceBusTemplateFactory(ServiceBusProducerFactory serviceBusProducerFactory) {
@@ -37,6 +41,7 @@ public class ServiceBusConfiguration {
         return serviceBusProcessorClientBuilder ->
                 serviceBusProcessorClientBuilder
                         .disableAutoComplete()
+                        .maxConcurrentCalls(concurrency)
                         .receiveMode(ServiceBusReceiveMode.PEEK_LOCK);
     }
 }

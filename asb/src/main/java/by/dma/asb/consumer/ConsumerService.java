@@ -21,7 +21,9 @@ public class ConsumerService {
 
     @ServiceBusListener(
             destination = "${messaging.consume.topic}",
-            group = "${messaging.consume.subscription}")
+            group = "${messaging.consume.subscription}",
+            concurrency = "${messaging.consume.concurrency:5}"
+    )
     public void consume(
             String body,
             @Header(ServiceBusMessageHeaders.RECEIVED_MESSAGE_CONTEXT)

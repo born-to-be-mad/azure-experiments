@@ -4,6 +4,7 @@ messaging:
   consume:
     topic: topic1
     subscription: topic1-subscriber1
+    concurrency: 5
 logging:
   level:
     root: WARN
