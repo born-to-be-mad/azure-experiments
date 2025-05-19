@@ -43,7 +43,8 @@ public class ConsumerService {
             log.info("Processing the payload: {}", dto);
             Thread.sleep(dto.getDuration());
             if (dto.isError()) {
-                String errorMessage = "Message[%s] aggregation failed".formatted(messageId);
+                String errorMessage = "Message[%s] with payload[%s] aggregation failed"
+                        .formatted(messageId, dto.getId());
                 log.error(errorMessage);
                 throw new RuntimeException(errorMessage);
             }
