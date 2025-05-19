@@ -1,0 +1,26 @@
+= Azure Service Bus—consume and produce
+Dzmitry Marudau <d.marudau@gmail.com>
+1.0, May 19, 2025: Azure Service Bus experiments
+:toc:
+:icons: font
+:url-quickref: https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/
+
+
+== How to run
+* run consumer1 `java -Dserver.port=8081 -Dspring.application.name=CONSUMER1 -jar build/libs/asb-0.0.1-SNAPSHOT.jar`
+
+* run consumer1 `java -Dserver.port=8082 -Dspring.application.name=CONSUMER2 -jar build/libs/asb-0.0.1-SNAPSHOT.jar`
+
+* run producer without consumption `java -Dserver.port=8888 -Dspring.application.name=PRODUCER -Dmessaging.consume.enabled=false -jar build/libs/asb-0.0.1-SNAPSHOT.jar`
+
+
+
+=== K6 Tests
+
+To perform K6 load tests:
+
+* Install k6 tool
+* Execute `k6 run {test_name}`
+* Run with custom options: `k6 run -u {number_of_virtual_users} -d {duration} {test_name}`
+* `k6 run -u 5 -d 10m supply-events.js` to run test 10 minutes concurrently with 5 VUs * `k6 run -u 10 -i 200 supply-events.js` to run test 200 times concurrently with 10 Us
+* More Options at https://k6.io/docs/using-k6/k6-options/reference/[K6 Reference]

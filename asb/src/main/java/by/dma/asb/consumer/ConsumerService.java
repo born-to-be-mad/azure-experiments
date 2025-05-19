@@ -9,12 +9,17 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
 @AllArgsConstructor
+@ConditionalOnProperty(
+        name = "messaging.consume.enabled",
+        havingValue = "true",
+        matchIfMissing = true)
 public class ConsumerService {
 
     private final ObjectMapper objectMapper;
