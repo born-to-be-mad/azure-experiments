@@ -6,11 +6,13 @@ import com.azure.spring.cloud.core.customizer.AzureServiceClientBuilderCustomize
 import com.azure.spring.cloud.service.servicebus.properties.ServiceBusEntityType;
 import com.azure.spring.messaging.servicebus.core.ServiceBusProducerFactory;
 import com.azure.spring.messaging.servicebus.core.ServiceBusTemplate;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@Slf4j
 public class ServiceBusConfiguration {
 
     @Value("${messaging.produce.concurrency:5}")
@@ -34,6 +36,7 @@ public class ServiceBusConfiguration {
     public AzureServiceClientBuilderCustomizer<
             ServiceBusClientBuilder.ServiceBusProcessorClientBuilder> serviceBusProcessorClientBuilderCustomizer() {
 
+        log.info("ServiceBusProcessorClientBuilderCustomizer: concurrency={}", concurrency);
         /*
          * Workaround: this behavior is supposed to be controlled by
          * "spring.cloud.azure.servicebus.processor.auto-complete" property, but for reason unknown it gets ignored.
