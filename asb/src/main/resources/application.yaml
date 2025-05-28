@@ -7,11 +7,13 @@ messaging:
     concurrency: 5
 logging:
   level:
-    root: WARN
+    root: FATAL
     by.dma: DEBUG
 
-
 spring:
+  threads:
+    virtual:
+      enabled: true
   cloud:
     azure:
       servicebus:

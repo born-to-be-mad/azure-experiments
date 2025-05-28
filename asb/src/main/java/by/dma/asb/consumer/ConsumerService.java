@@ -1,5 +1,11 @@
 package by.dma.asb.consumer;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.azure.messaging.servicebus.models.DeadLetterOptions;
 import com.azure.spring.messaging.servicebus.implementation.core.annotation.ServiceBusListener;
@@ -12,6 +18,10 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
+
+import static java.lang.System.nanoTime;
+import static java.lang.System.out;
+import static java.util.concurrent.CompletableFuture.runAsync;
 
 @Service
 @Slf4j
@@ -39,20 +49,43 @@ public class ConsumerService {
         log.info("Message[{}] consumption started, retry attempt={}, payload={}",
                 messageId, retryAttempt, body);
         try {
+            long time = nanoTime();
             var dto = getMessageDto(body);
             log.info("Processing the payload: {}", dto);
-            Thread.sleep(dto.getDuration());
-            if (dto.isError()) {
-                String errorMessage = "Message[%s] with payload[%s] aggregation failed"
-                        .formatted(messageId, dto.getId());
-                log.error(errorMessage);
-                throw new RuntimeException(errorMessage);
+            int duration = dto.getDuration();
+            try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+                List.of(
+                        runAsync(() -> processing("Aggregate order-data", duration), executor),
+                        runAsync(() -> processing("Aggregate department-data", duration, dto.isError()), executor),
+                        runAsync(() -> processing("Aggregate questionnaire-data", duration), executor),
+                        runAsync(() -> processing("Aggregate payment-data", duration), executor)
+                ).forEach(CompletableFuture::join);
             }
             messageContext.complete();
-            log.info("Message[{}] processed successfully", messageId);
+            time = nanoTime() - time;
+            log.info("Message[{}] processed successfully in {}", messageId, (time / 1_000_000));
         } catch (NotRetryableException e) {
             log.debug("Dead lettering message[messageId={}]", messageId);
             moveToDlq(messageContext, e);
+        }
+    }
+
+    private void processing(String operation, int baseDuration) {
+        processing(operation, baseDuration, false);
+    }
+
+    private void processing(String operation, int baseDuration, boolean error) {
+        var duration = baseDuration * ThreadLocalRandom.current().nextInt(100, 150) / 100;
+        log.info("{}...expected duration={}", operation, duration);
+        try {
+            Thread.sleep(duration);
+            if (error) {
+                String errorMessage = "%s failed".formatted(operation);
+                log.error(errorMessage);
+                throw new RuntimeException(errorMessage);
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
