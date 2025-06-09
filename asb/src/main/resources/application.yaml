@@ -1,6 +1,7 @@
 messaging:
   produce:
-    topic: topic1
+    in-topic: topic1
+    out-topic: topic2
   consume:
     topic: topic1
     subscription: topic1-subscriber1

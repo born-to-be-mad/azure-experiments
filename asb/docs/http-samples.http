@@ -1,5 +1,5 @@
 ### Send valid message
-POST http://localhost:8080/api/produce
+POST http://localhost:8888/api/produce
 Content-Type: application/json
 
 {
@@ -10,13 +10,13 @@ Content-Type: application/json
 }
 
 ### Send an error
-POST http://localhost:8080/api/produce
+POST http://localhost:8888/api/produce
 Content-Type: application/json
 
 {
   "id": "bad-id",
   "value": "bad-value1",
-  "duration": 5000,
+  "duration": 30000,
   "error": true
 }
 

@@ -6,26 +6,29 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 
+import by.dma.asb.producer.ProducerService;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.azure.messaging.servicebus.models.DeadLetterOptions;
 import com.azure.spring.messaging.servicebus.implementation.core.annotation.ServiceBusListener;
 import com.azure.spring.messaging.servicebus.support.ServiceBusMessageHeaders;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
 import static java.lang.System.nanoTime;
-import static java.lang.System.out;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 @Service
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
 @ConditionalOnProperty(
         name = "messaging.consume.enabled",
         havingValue = "true",
@@ -33,6 +36,11 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 public class ConsumerService {
 
     private final ObjectMapper objectMapper;
+
+    @Value("${messaging.produce.out-topic}")
+    private String topic;
+
+    private final ProducerService messagingProducerService;
 
     @ServiceBusListener(
             destination = "${messaging.consume.topic}",
@@ -52,21 +60,36 @@ public class ConsumerService {
             long time = nanoTime();
             var dto = getMessageDto(body);
             log.info("Processing the payload: {}", dto);
-            int duration = dto.getDuration();
+            int baseDuration = dto.getDuration();
             try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
                 List.of(
-                        runAsync(() -> processing("Aggregate order-data", duration), executor),
-                        runAsync(() -> processing("Aggregate department-data", duration, dto.isError()), executor),
-                        runAsync(() -> processing("Aggregate questionnaire-data", duration), executor),
-                        runAsync(() -> processing("Aggregate payment-data", duration), executor)
+                        runAsync(() -> processingWithNotRetryable("Aggregate order-data", baseDuration), executor),
+                        runAsync(() -> processing("Aggregate department-data", baseDuration, dto.isError()), executor),
+                        runAsync(() -> processing("Aggregate questionnaire-data", baseDuration), executor),
+                        runAsync(() -> processing("Aggregate payment-data", baseDuration), executor)
                 ).forEach(CompletableFuture::join);
             }
+            sendOutputMessage(dto);
             messageContext.complete();
             time = nanoTime() - time;
             log.info("Message[{}] processed successfully in {}", messageId, (time / 1_000_000));
-        } catch (NotRetryableException e) {
-            log.debug("Dead lettering message[messageId={}]", messageId);
-            moveToDlq(messageContext, e);
+        } catch (Exception e) {
+            if(e instanceof NotRetryableException || e.getCause() instanceof NotRetryableException) {
+                log.error("Message[{}] processing failed with unrecoverable error: {}", messageId, e.getMessage());
+                moveToDlq(messageContext, e);
+            } else {
+                log.warn("Message[{}] processing failed, retrying...", messageId, e);
+                messageContext.abandon();
+            }
+        }
+    }
+
+    private void sendOutputMessage(MessageDto dto) {
+        try {
+            messagingProducerService.send(topic, objectMapper.writeValueAsString(dto));
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize message: {}", dto, e);
+            throw new NotRetryableException("Failed to serialize message", e);
         }
     }
 
@@ -74,22 +97,35 @@ public class ConsumerService {
         processing(operation, baseDuration, false);
     }
 
+    private void processingWithNotRetryable(String operation, int baseDuration) {
+        boolean errorOccurred = baseDuration % 5 == 0;
+        if (errorOccurred) {
+            processingWithError(operation, baseDuration, new NotRetryableException("Simulated unrecoverable error"));
+        } else {
+            processing(operation, baseDuration);
+        }
+    }
+
     private void processing(String operation, int baseDuration, boolean error) {
-        var duration = baseDuration * ThreadLocalRandom.current().nextInt(100, 150) / 100;
+        processingWithError(operation, baseDuration, error ? new RuntimeException("Simulated error") : null);
+    }
+
+    private void processingWithError(String operation, int baseDuration, RuntimeException exception) {
+        var duration = baseDuration * ThreadLocalRandom.current().nextInt(100, 170) / 100;
         log.info("{}...expected duration={}", operation, duration);
         try {
             Thread.sleep(duration);
-            if (error) {
-                String errorMessage = "%s failed".formatted(operation);
+            if (exception != null) {
+                String errorMessage = "%s failed: %s".formatted(operation, exception.getMessage());
                 log.error(errorMessage);
-                throw new RuntimeException(errorMessage);
+                throw exception;
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void moveToDlq(ServiceBusReceivedMessageContext messageContext, NotRetryableException e) {
+    private void moveToDlq(ServiceBusReceivedMessageContext messageContext, Exception e) {
         DeadLetterOptions options = new DeadLetterOptions();
         options.setDeadLetterReason(e.getMessage());
         options.setDeadLetterErrorDescription(getErrorDescription(e));

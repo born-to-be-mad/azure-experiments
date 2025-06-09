@@ -3,15 +3,16 @@ import { sleep } from 'k6';
 
 export let options = {
     vus: 10,
-    duration: '1m',
+    duration: '5m',
 };
 
 export default function () {
     const userNum = __VU; // VU number (1-10)
-    const reqNum = (__ITER % 20) + 1; // Request number for this VU (1-20)
+    //const reqNum = (__ITER % 20) + 1; // Request number for this VU (1-20)
+    const reqNum = __ITER;
     const id = `user-${userNum}-${reqNum}`;
     const duration = Math.floor(Math.random() * 1001) + 1000; // 1000-2000
-    const error = (reqNum % 10 === 0);
+    const error = (reqNum === 10);
 
     const payload = JSON.stringify({
         id,
@@ -26,7 +27,7 @@ export default function () {
         },
     };
 
-    http.post('http://localhost:8080/api/produce', payload, params);
+    http.post('http://localhost:8888/api/produce', payload, params);
 
     sleep(3); // 20 requests per minute per user
 }

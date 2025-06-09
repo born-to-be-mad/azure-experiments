@@ -11,9 +11,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class MessagingProducerService implements ProducerService {
 
-    @Value("${messaging.produce.topic}")
-    private String topic;
-
     private final ServiceBusTemplate serviceBusTemplate;
 
     public MessagingProducerService(ServiceBusTemplate serviceBusTemplate) {
@@ -21,8 +18,8 @@ public class MessagingProducerService implements ProducerService {
     }
 
     @Override
-    public void send(String payload) {
-        log.info("Sending message: {}", payload);
+    public void send(String topic, String payload) {
+        log.info("Sending message to '{}'. Payload: {}", topic, payload);
         Message<String> message = MessageBuilder
                 .withPayload(payload)
                 //.setHeader(ServiceBusMessageHeaders.SCHEDULED_ENQUEUE_TIME, offsetDuration)

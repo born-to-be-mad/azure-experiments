@@ -7,9 +7,14 @@ Dzmitry Marudau <d.marudau@gmail.com>
 
 
 == How to run
+
+* configure environment variables
+* `export AZURE_SERVICE_BUS_CONNECTION_STRING=your_connection_string`
+* `export AZURE_SERVICEBUS_NAMESPACE=your_namespace`
+
 * run consumer1 `java -Dserver.port=8081 -Dspring.application.name=CONSUMER1 -jar build/libs/asb-0.0.1-SNAPSHOT.jar`
 
-* run consumer1 `java -Dserver.port=8082 -Dspring.application.name=CONSUMER2 -jar build/libs/asb-0.0.1-SNAPSHOT.jar`
+* run consumer2 `java -Dserver.port=8082 -Dspring.application.name=CONSUMER2 -jar build/libs/asb-0.0.1-SNAPSHOT.jar`
 
 * run producer without consumption `java -Dserver.port=8888 -Dspring.application.name=PRODUCER -Dmessaging.consume.enabled=false -jar build/libs/asb-0.0.1-SNAPSHOT.jar`
 
