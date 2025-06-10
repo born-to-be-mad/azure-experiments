@@ -1,6 +1,11 @@
 package by.dma.asb.endpoint;
 
+import java.util.UUID;
+
+import by.dma.asb.consumer.MessageDto;
+import by.dma.asb.consumer.NotRetryableException;
 import by.dma.asb.producer.ProducerService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,9 +23,21 @@ public class ProducerController {
 
     private final ProducerService messagingProducerService;
 
+    private final ObjectMapper objectMapper;
+
     @PostMapping
     public void sendMessage(@RequestBody String message) {
-        messagingProducerService.send(topic, message);
+        var dto = getMessageDto(message);
+        String messageId = dto.getId();
+        messagingProducerService.send(topic, messageId, message);
+    }
+
+    private MessageDto getMessageDto(String body) {
+        try {
+            return objectMapper.readValue(body, MessageDto.class);
+        } catch (Exception e) {
+            throw new NotRetryableException("Failed to parse message", e);
+        }
     }
 }
 

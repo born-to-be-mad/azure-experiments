@@ -77,9 +77,10 @@ public class ConsumerService {
             if (e instanceof NotRetryableException nre) {
                 log.error("Message[{}] processing failed with unrecoverable error: {}", messageId, nre.getMessage());
                 moveToDlq(messageContext, nre);
-            } else if (e.getCause() instanceof NotRetryableException nre) {
-                log.error("Message[{}] processing failed with unrecoverable error: {}", messageId, nre.getMessage());
-                moveToDlq(messageContext, nre);
+            } else if (e.getCause() instanceof NotRetryableException) {
+                var cause = e.getCause();
+                log.error("Message[{}] processing failed with unrecoverable error: {}", messageId, cause.getMessage());
+                moveToDlq(messageContext, cause);
             } else {
                 log.warn("Message[{}] processing failed, retrying...", messageId, e);
                 messageContext.abandon();
@@ -89,7 +90,7 @@ public class ConsumerService {
 
     private void sendOutputMessage(MessageDto dto) {
         try {
-            messagingProducerService.send(topic, objectMapper.writeValueAsString(dto));
+            messagingProducerService.send(topic, dto.getId(), objectMapper.writeValueAsString(dto));
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize message: {}", dto, e);
             throw new NotRetryableException("Failed to serialize message", e);
@@ -128,7 +129,7 @@ public class ConsumerService {
         }
     }
 
-    private void moveToDlq(ServiceBusReceivedMessageContext messageContext, Exception e) {
+    private void moveToDlq(ServiceBusReceivedMessageContext messageContext, Throwable e) {
         log.error("Moving message[id={}] to DLQ due to unrecoverable error: {}",
                 messageContext.getMessage().getMessageId(), e.getMessage());
         DeadLetterOptions options = new DeadLetterOptions();
@@ -145,7 +146,7 @@ public class ConsumerService {
         }
     }
 
-    private String getErrorDescription(Exception e) {
+    private String getErrorDescription(Throwable e) {
         String description = StringUtils.defaultIfBlank(ExceptionUtils.getStackTrace(e), null);
         return StringUtils.substring(description, 0, 2000);
     }

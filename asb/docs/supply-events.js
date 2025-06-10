@@ -11,7 +11,7 @@ export default function () {
     //const reqNum = (__ITER % 20) + 1; // Request number for this VU (1-20)
     const reqNum = __ITER;
     const id = `user-${userNum}-${reqNum}`;
-    const duration = Math.floor(Math.random() * 1001) + 1000; // 1000-2000
+    const duration = Math.floor(Math.random() * 1_001) + 2_000; // 2000-3000ms
     const error = (reqNum === 10);
 
     const payload = JSON.stringify({

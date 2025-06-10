@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 public class ConsoleProducerService implements ProducerService {
 
     @Override
-    public void send(String topic, String payload) {
+    public void send(String topic, String messageId, String payload) {
         log.info("Sending message to topic '{}': {}", topic, payload);
     }
 }
