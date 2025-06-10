@@ -74,9 +74,12 @@ public class ConsumerService {
             time = nanoTime() - time;
             log.info("Message[{}] processed successfully in {}", messageId, (time / 1_000_000));
         } catch (Exception e) {
-            if(e instanceof NotRetryableException || e.getCause() instanceof NotRetryableException) {
-                log.error("Message[{}] processing failed with unrecoverable error: {}", messageId, e.getMessage());
-                moveToDlq(messageContext, e);
+            if (e instanceof NotRetryableException nre) {
+                log.error("Message[{}] processing failed with unrecoverable error: {}", messageId, nre.getMessage());
+                moveToDlq(messageContext, nre);
+            } else if (e.getCause() instanceof NotRetryableException nre) {
+                log.error("Message[{}] processing failed with unrecoverable error: {}", messageId, nre.getMessage());
+                moveToDlq(messageContext, nre);
             } else {
                 log.warn("Message[{}] processing failed, retrying...", messageId, e);
                 messageContext.abandon();
@@ -98,7 +101,7 @@ public class ConsumerService {
     }
 
     private void processingWithNotRetryable(String operation, int baseDuration) {
-        boolean errorOccurred = baseDuration % 5 == 0;
+        boolean errorOccurred = baseDuration % 13 == 0;
         if (errorOccurred) {
             processingWithError(operation, baseDuration, new NotRetryableException("Simulated unrecoverable error"));
         } else {
@@ -126,6 +129,8 @@ public class ConsumerService {
     }
 
     private void moveToDlq(ServiceBusReceivedMessageContext messageContext, Exception e) {
+        log.error("Moving message[id={}] to DLQ due to unrecoverable error: {}",
+                messageContext.getMessage().getMessageId(), e.getMessage());
         DeadLetterOptions options = new DeadLetterOptions();
         options.setDeadLetterReason(e.getMessage());
         options.setDeadLetterErrorDescription(getErrorDescription(e));
